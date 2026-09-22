@@ -1,38 +1,24 @@
 import os
 
+import mysql.connector
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Depends
+from pydantic import BaseModel
+
 
 load_dotenv()
-import mysql.connector
 
-from fastapi import FastAPI,HTTPException,Query,UploadFile,File,Depends
-from pydantic import BaseModel
-from typing import List
 app = FastAPI()
 
-# class StudentResponse(BaseModel):
-    
-#     name: str
-#     age: int
-#     course: str
-    
-    
+
 # MySQL connection
-# db = mysql.connector.connect(
-#     host="localhost",
-#     user="root",
-#     password="Manan@1234",
-#     database="student_db"
-# )
-# db = mysql.connector.connect(
-    
-# )
 db = mysql.connector.connect(
     host=os.getenv("DB_HOST"),
     user=os.getenv("DB_USER"),
     password=os.getenv("DB_PASSWORD"),
     database=os.getenv("DB_NAME")
 )
+
 cursor = db.cursor(dictionary=True)
 
 
@@ -71,7 +57,6 @@ def create_student(student: Student):
 
 
 # GET - Get all students
-# @app.get("/students",response_model=List[StudentResponse])
 @app.get("/students")
 def get_students(city: str | None = Query(default=None)):
 
@@ -86,6 +71,7 @@ def get_students(city: str | None = Query(default=None)):
 
     return students
 
+
 # GET - Get one particular student
 @app.get("/students/{student_id}")
 def get_student(student_id: int):
@@ -98,11 +84,11 @@ def get_student(student_id: int):
 
     if student is None:
         raise HTTPException(
-        status_code=404,
-        detail="Student not found"
-    )
-    else:
-        return student
+            status_code=404,
+            detail="Student not found"
+        )
+
+    return student
 
 
 # PUT - Update student
@@ -131,7 +117,10 @@ def update_student(student_id: int, student: Student):
     db.commit()
 
     if cursor.rowcount == 0:
-        return {"message": "Student not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Student not found"
+        )
 
     return {
         "message": "Student updated successfully"
@@ -149,25 +138,33 @@ def delete_student(student_id: int):
     db.commit()
 
     if cursor.rowcount == 0:
-        return {"message": "Student not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Student not found"
+        )
 
     return {
         "message": "Student deleted successfully"
     }
 
+
+# POST - Upload file
 @app.post("/upload")
 def upload_file(file: UploadFile = File(...)):
+
     return {
         "filename": file.filename
     }
 
 
-# dependency example
+# Dependency example
 def check_user():
     return "User verified"
 
+
 @app.get("/students123")
-def get_students(user=Depends(check_user)):
+def get_students_with_dependency(user=Depends(check_user)):
+
     return {
         "message": "Students fetched",
         "user": user
